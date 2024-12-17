@@ -1,16 +1,26 @@
-const API_KEY = "00f786f443704719915868ddf24ccd65";
-const url = "https://newsapi.org/v2/everything?q=";
+const API_KEY = "7eaa8d9cc48b7d2a251b5bf21b54ba9f";
+const url = "http://api.mediastack.com/v1/news?access_key=" + API_KEY + "&languages=en&q=";
 
-window.addEventListener("load",() => fetchNews("India"));
+window.addEventListener("load", () => fetchNews("India"));
 
 function reload() {
     window.location.reload();
 }
 
 async function fetchNews(query) {
-    const res = await fetch(`${url}${query}&apiKey=${API_KEY}`);
-    const data = await res.json();    
-    bindData(data.articles);  
+    try {
+        const res = await fetch(`${url}${query}`);
+        const data = await res.json();
+
+        // MediaStack API wraps articles in 'data'
+        if (data && data.data) {
+            bindData(data.data);  
+        } else {
+            console.error("No data found in API response:", data);
+        }
+    } catch (error) {
+        console.error("Error fetching news:", error);
+    }
 }
 
 function bindData(articles) {
@@ -20,8 +30,8 @@ function bindData(articles) {
     cardsContainer.innerHTML = "";
 
     articles.forEach(article => {
-        if (!article.urlToImage) return;
-        const cardClone =  newsCardTemplate.content.cloneNode(true);
+        if (!article.image) return; // MediaStack uses 'image' instead of 'urlToImage'
+        const cardClone = newsCardTemplate.content.cloneNode(true);
         fillDataInCard(cardClone, article);
         cardsContainer.appendChild(cardClone);
     });
@@ -33,19 +43,19 @@ function fillDataInCard(cardClone, article) {
     const newsSource = cardClone.querySelector("#news-source");
     const newsDesc = cardClone.querySelector("#news-desc");
 
-    newsImg.src = article.urlToImage;
-    newsTitle.innerHTML = article.title;
-    newsDesc.innerHTML = article.description;
+    newsImg.src = article.image; // Use 'image' from MediaStack API
+    newsTitle.innerHTML = article.title || "No Title";
+    newsDesc.innerHTML = article.description || "No Description";
 
-    const date = new Date(article.publishedAt).toLocaleString("en-US", {
+    const date = new Date(article.published_at).toLocaleString("en-US", {
         timeZone: "Asia/Jakarta",
     });
 
-    newsSource.innerHTML =`${article.source.name} . ${date}`;
+    newsSource.innerHTML = `${article.source || "Unknown Source"} . ${date}`;
 
     cardClone.firstElementChild.addEventListener("click", () => {
         window.open(article.url, "_blank");
-    })
+    });
 }
 
 let curSelectedNav = null;
@@ -69,81 +79,36 @@ searchButton.addEventListener("click", () => {
     curSelectedNav = null;
 });
 
+// Dark mode logic
 let page = document.querySelector('body');
 let nav = document.querySelector('nav');
-let txt = document.querySelector('#dark');
-
 
 function mode() {
     let card = document.querySelectorAll(".card");
-    let temp = document.querySelector("#template-news-card");
-    let title = document.querySelectorAll("#news-title");
-    let source = document.querySelectorAll("#news-source");
-    let desc = document.querySelectorAll("#news-desc");
-    let mode = document.getElementById("mode");
-    let dark = document.getElementById("dark");
+    let modeImg = document.getElementById("mode");
 
-    if (page.style.backgroundColor!= "black") {
+    if (page.style.backgroundColor !== "black") {
+        // Dark Mode
         page.style.backgroundColor = "black";
-        page.style.transition = "2s ease";
+        page.style.color = "white";
         nav.style.backgroundColor = "black";
         nav.style.color = "white";
-        nav.style.transition = "2s ease";
-        mode.src =  "img/sun.svg"
-        // setTimeout(()=>{
-        //     mode.src =  "img/sun.svg"
-        // },1000)
-        dark.style.transition = "2s ease";
-        temp.style.backgroundColor = "black";
-        
-        card.forEach((a)=>{
+        modeImg.src = "img/sun.svg";
+
+        card.forEach(a => {
             a.style.backgroundColor = "black";
-            a.style.transition = "2s ease";
-        });
-        
-        title.forEach((a)=>{
-            a.style.color = "white";
-            a.style.transition = "2s ease";
-        });
-        
-        source.forEach((a)=>{
-            a.style.color = "white";
-            a.style.transition = "2s ease";
-        });
-        
-        desc.forEach((a)=>{
-            a.style.transition = "2s ease";
             a.style.color = "white";
         });
-        
-    }
-    else{
+    } else {
+        // Light Mode
         page.style.backgroundColor = "white";
         page.style.color = "black";
-        page.style.transition = "2s ease";
         nav.style.backgroundColor = "#fefaff";
-        nav.style.transition = "2s ease";
         nav.style.color = "#2294ed";
-        mode.src = "img/dark.svg";
-        dark.style.transition = "2s ease";
+        modeImg.src = "img/dark.svg";
 
-        card.forEach((a)=>{
+        card.forEach(a => {
             a.style.backgroundColor = "white";
-            a.style.transition = "2s ease";
-        });
-
-        title.forEach((a)=>{
-            a.style.transition = "2s ease";
-            a.style.color = "black";
-        });
-
-        source.forEach((a)=>{
-            a.style.transition = "2s ease";
-            a.style.color = "black";
-        });
-
-        desc.forEach((a)=>{
-            a.style.transition = "2s ease";
             a.style.color = "black";
         });
     }
